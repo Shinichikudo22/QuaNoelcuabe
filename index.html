@@ -46,9 +46,11 @@
       bottom: 14px;
       right: 16px;
       display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 8px;
       z-index: 10;
-      opacity: 0.75;
+      opacity: 0.78;
       transition: opacity 0.2s;
     }
     #controls:hover {
@@ -74,7 +76,12 @@
 <body>
   <div id="wrapper">
     <canvas id="screen"></canvas>
+
+    <!-- Đặt file nhạc .mp3 cùng thư mục với index.html và sửa tên file tại src -->
+    <audio id="bgMusic" src="last-christmas.mp3" loop preload="auto"></audio>
+
     <div id="controls">
+      <button id="btnMusic">M: Music Off</button>
       <button id="btnPause">Space: Pause</button>
       <button id="btnRestart">R: Restart</button>
       <button id="btnSave">S: Save PNG</button>
@@ -104,7 +111,6 @@
       canvas.height = ROWS * CH * dpr;
       ctx.scale(dpr, dpr);
 
-      // Tự động co giãn vừa khung hình điện thoại / máy tính
       function fitCanvas() {
         const scale = Math.min(
           window.innerWidth / (COLS * CW),
@@ -145,7 +151,6 @@
         return [x / len, y / len, z / len];
       }
 
-      // Phân bố điểm đều trên mặt cầu (Fibonacci Sphere) cho quả châu & bóng đèn
       function fibSphere(n) {
         const pts = [];
         const golden = Math.PI * (3 - Math.sqrt(5));
@@ -165,28 +170,27 @@
       const Y0 = -0.68;
       const Y1 = 1.05;
 
-      // Mốc thời gian xuất hiện từng phần (giây)
-      const T_GROW = [1.0, 4.6];     // Cây mọc từ ngọn xuống gốc
-      const T_GARLAND = [4.8, 7.2];  // Dây kim tuyến quấn quanh
-      const T_BALLS = [6.2, 8.4];    // Quả châu trang trí
-      const T_LIGHTS = [7.8, 10.4];  // Đèn nháy đầu cành
-      const T_GIFTS = [10.0, 12.0];  // Hộp quà dưới gốc
-      const T_STAR = 12.0;           // Ngôi sao đỉnh cây
-      const T_MSG = 13.4;            // Dòng chữ Merry Christmas
+      // Mốc thời gian xuất hiện từng phần (giây) khớp với video
+      const T_GROW = [1.0, 4.6];     // Cây mọc từ ngọn xuống gốc kèm dải sáng trắng
+      const T_GARLAND = [4.8, 7.2];  // Dây kim tuyến vàng quấn từ dưới lên
+      const T_BALLS = [6.2, 8.4];    // Quả châu đỏ, vàng, bạc
+      const T_LIGHTS = [7.8, 10.4];  // 170 đèn nháy đầu cành
+      const T_GIFTS = [10.0, 12.0];  // 5 hộp quà bung sáng dưới gốc
+      const T_STAR = 12.0;           // Ngôi sao bùng tia trắng rồi chuyển vàng
+      const T_MSG = 13.4;            // Dòng chữ Merry Christmas 2026
 
       function envelope(y) {
         const u = clamp((y - Y0) / (Y1 - Y0), 0, 1);
         return 0.78 * Math.pow(1 - u, 0.82) + 0.03;
       }
 
-      // Mọc từ trên ngọn (Y1) xuống dưới gốc (GROUND)
       function growTime(y) {
         const u = clamp((Y1 - y) / (Y1 - GROUND), 0, 1);
         return T_GROW[0] + (T_GROW[1] - T_GROW[0]) * u;
       }
 
-      // Bảng màu RGB (0..1)
       const WHITE = [0.96, 0.98, 1.0];
+      const SILVER = [0.86, 0.90, 0.96];
       const TRUNK_COL = [0.45, 0.28, 0.15];
       const GOLD = [1.0, 0.84, 0.25];
       const RED = [0.96, 0.18, 0.22];
@@ -194,7 +198,6 @@
       const BLUE_BOX = [0.22, 0.52, 0.96];
       const WARM = [1.0, 0.93, 0.68];
 
-      // Danh sách điểm 3D & Sao nền
       let points = [];
       let groundPts = [];
       let stars = [];
@@ -217,27 +220,28 @@
         stars = [];
         const tips = [];
 
-        // A. Bầu trời sao nền
-        for (let i = 0; i < 230; i++) {
+        // A. Bầu trời sao nền nhấp nháy
+        for (let i = 0; i < 240; i++) {
           stars.push({
             col: Math.floor(rand() * COLS),
-            row: Math.floor(rand() * (ROWS - 14)),
-            ch: rand() < 0.25 ? "+" : rand() < 0.6 ? "*" : ".",
+            row: Math.floor(rand() * (ROWS - 12)),
+            ch: rand() < 0.28 ? "+" : rand() < 0.62 ? "*" : ".",
             phase: rand() * TAU,
             speed: uniform(1.5, 4.0)
           });
         }
 
         // B. Mặt sàn chấm tròn xoay cùng cây
-        for (let gx = -2.5; gx <= 2.5; gx += 0.17) {
-          for (let gz = -2.5; gz <= 2.5; gz += 0.17) {
-            if (Math.hypot(gx, gz) <= 2.55) {
-              groundPts.push({ x: gx, y: GROUND, z: gz });
+        for (let gx = -2.4; gx <= 2.4; gx += 0.16) {
+          for (let gz = -2.4; gz <= 2.4; gz += 0.16) {
+            const dist = Math.hypot(gx, gz);
+            if (dist <= 2.45) {
+              groundPts.push({ x: gx, y: GROUND, z: gz, dist });
             }
           }
         }
 
-        // C. Tán lá thông nhiều tầng rủ xuống + Tuyết bám đầu cành
+        // C. Tán lá thông 24 tầng rủ xuống + Tuyết đầu cành
         const whorls = 24;
         for (let i = 0; i < whorls; i++) {
           const y = Y0 + 0.02 + ((Y1 - 0.06 - (Y0 + 0.02)) * i) / (whorls - 1);
@@ -248,7 +252,7 @@
           for (let b = 0; b < nb; b++) {
             const a = (TAU * (b + 0.5 * rand())) / nb + i * 0.77;
             const L = R * uniform(0.85, 1.08);
-            const n = Math.floor(25 + 250 * L);
+            const n = Math.floor(25 + 270 * L);
             const dx = Math.cos(a), dz = Math.sin(a);
             const sx = -Math.sin(a), sz = Math.cos(a);
 
@@ -287,7 +291,6 @@
               );
             }
 
-            // Lưu tọa độ đầu cành để gắn đèn nháy
             const tl = 0.93 * L;
             tips.push([
               dx * tl,
@@ -297,12 +300,12 @@
           }
         }
 
-        // D. Lõi nón tối bên trong để che các cành mặt sau không bị xuyên thấu
-        const innerCount = 5500;
+        // D. Lõi nón tối bên trong để che các cành mặt sau
+        const innerCount = 6000;
         for (let i = 0; i < innerCount; i++) {
           const y = Y0 + (Y1 - 0.1 - Y0) * rand();
           const phi = rand() * TAU;
-          const r = 0.58 * envelope(y);
+          const r = 0.60 * envelope(y);
           const [nx, ny, nz] = normalize(Math.cos(phi), 0.3, Math.sin(phi));
           addPoint(
             Math.cos(phi) * r, y, Math.sin(phi) * r,
@@ -315,7 +318,7 @@
         }
 
         // E. Thân cây thông
-        const trunkCount = 1400;
+        const trunkCount = 1500;
         for (let i = 0; i < trunkCount; i++) {
           const y = GROUND + rand() * (Y0 + 0.1 - GROUND);
           const phi = rand() * TAU;
@@ -332,25 +335,25 @@
         }
 
         // F. Dây kim tuyến vàng quấn xoắn ốc võng xuống
-        const garlandSteps = 2400;
+        const garlandSteps = 2000;
         const turns = 3.6;
         for (let i = 0; i < garlandSteps; i++) {
           const u = i / (garlandSteps - 1);
-          const yg = Y0 + 0.14 + (Y1 - Y0 - 0.42) * u;
+          const yg = Y0 + 0.15 + (Y1 - Y0 - 0.45) * u;
           const ag = TAU * turns * u + 0.9;
-          const swag = -0.065 * Math.abs(Math.sin(ag * 2.5));
+          const swag = -0.07 * Math.abs(Math.sin(ag * 2.5));
           const rg = envelope(yg) + 0.07;
 
-          for (let j = 0; j < 3; j++) {
+          for (let j = 0; j < 4; j++) {
             const [nx, ny, nz] = normalize(
               Math.cos(ag) + 0.4 * gauss(),
               0.3 + 0.4 * gauss(),
               Math.sin(ag) + 0.4 * gauss()
             );
             addPoint(
-              Math.cos(ag) * rg + 0.015 * gauss(),
-              yg + swag + 0.015 * gauss(),
-              Math.sin(ag) * rg + 0.015 * gauss(),
+              Math.cos(ag) * rg + 0.016 * gauss(),
+              yg + swag + 0.016 * gauss(),
+              Math.sin(ag) * rg + 0.016 * gauss(),
               nx, ny, nz,
               GOLD,
               "TINSEL",
@@ -361,19 +364,19 @@
           }
         }
 
-        // G. Quả châu đỏ & vàng xen kẽ
-        const sphere = fibSphere(140);
-        const numBaubles = 34;
+        // G. Quả châu đỏ (chủ đạo), vàng kim và bạc
+        const sphere = fibSphere(160);
+        const numBaubles = 36;
         for (let k = 0; k < numBaubles; k++) {
           const u = (k + rand()) / numBaubles;
-          const y = Y0 + 0.08 + u * (Y1 - Y0 - 0.36);
+          const y = Y0 + 0.08 + u * (Y1 - Y0 - 0.38);
           const a = k * 2.39996 + rand() * 0.4;
-          const rEnv = envelope(y);
+          const rEnv = envelope(y) + 0.03 * (1 - u);
           const cx = Math.cos(a) * rEnv;
           const cy = y - 0.03;
           const cz = Math.sin(a) * rEnv;
-          const rad = 0.056 + 0.03 * (1 - u);
-          const col = k % 2 === 0 ? RED : GOLD;
+          const rad = 0.058 + 0.032 * (1 - u);
+          const col = k % 3 !== 0 ? RED : (k % 6 === 0 ? GOLD : SILVER);
           const t0 = T_BALLS[0] + rand() * (T_BALLS[1] - T_BALLS[0]);
 
           for (const [sx, sy, sz] of sphere) {
@@ -391,9 +394,8 @@
           }
         }
 
-        // H. Đèn nháy trên đầu các nhánh lá
-        const bulb = fibSphere(14);
-        // Xáo trộn mảng tips
+        // H. 170 bóng đèn nháy trên đầu các nhánh lá
+        const bulb = fibSphere(16);
         for (let i = tips.length - 1; i > 0; i--) {
           const j = Math.floor(rand() * (i + 1));
           [tips[i], tips[j]] = [tips[j], tips[i]];
@@ -403,12 +405,12 @@
 
         for (const [cx, cy, cz] of pickedTips) {
           const t0 = T_LIGHTS[0] + rand() * (T_LIGHTS[1] - T_LIGHTS[0]);
-          const col = rand() < 0.78 ? WARM : [1.0, 0.96, 0.88];
+          const col = rand() < 0.8 ? WARM : [1.0, 0.95, 0.85];
           const phase = rand() * TAU;
 
           for (const [bx, by, bz] of bulb) {
             addPoint(
-              cx + bx * 0.026, cy + by * 0.026, cz + bz * 0.026,
+              cx + bx * 0.03, cy + by * 0.03, cz + bz * 0.03,
               bx, by, bz,
               col,
               "LIGHT",
@@ -421,13 +423,13 @@
           }
         }
 
-        // I. Các hộp quà thắt nơ dưới gốc cây
+        // I. 5 hộp quà thắt nơ dưới gốc cây (lóe sáng trắng khi xuất hiện)
         const gifts = [
-          { a: 0.3, dist: 0.62, w: 0.28, h: 0.22, d: 0.26, rot: 0.4, body: RED, rib: GOLD },
-          { a: 1.5, dist: 0.68, w: 0.25, h: 0.28, d: 0.25, rot: 0.2, body: GOLD, rib: RED },
-          { a: 2.6, dist: 0.60, w: 0.32, h: 0.18, d: 0.25, rot: 1.0, body: GREEN_BOX, rib: RED },
-          { a: 3.8, dist: 0.66, w: 0.28, h: 0.26, d: 0.28, rot: 0.1, body: BLUE_BOX, rib: GOLD },
-          { a: 5.1, dist: 0.64, w: 0.24, h: 0.20, d: 0.24, rot: 0.7, body: RED, rib: WHITE }
+          { a: 0.3, dist: 0.78, w: 0.30, h: 0.24, d: 0.28, rot: 0.4, body: RED, rib: GOLD },
+          { a: 1.5, dist: 0.84, w: 0.26, h: 0.30, d: 0.26, rot: 0.2, body: GOLD, rib: RED },
+          { a: 2.6, dist: 0.76, w: 0.34, h: 0.20, d: 0.28, rot: 1.0, body: GREEN_BOX, rib: RED },
+          { a: 3.8, dist: 0.82, w: 0.30, h: 0.28, d: 0.30, rot: 0.1, body: BLUE_BOX, rib: GOLD },
+          { a: 4.9, dist: 0.78, w: 0.26, h: 0.22, d: 0.26, rot: 0.7, body: RED, rib: WHITE }
         ];
         const bowSphere = fibSphere(60);
 
@@ -436,10 +438,10 @@
           const gz = Math.sin(g.a) * g.dist;
           const cosR = Math.cos(g.rot), sinR = Math.sin(g.rot);
           const t0 = T_GIFTS[0] + (idx / gifts.length) * (T_GIFTS[1] - T_GIFTS[0]);
-          const ptsOnBox = 1400;
+          const ptsOnBox = 1500;
 
           for (let i = 0; i < ptsOnBox; i++) {
-            const face = Math.floor(rand() * 5); // 0: mặt trên, 1..4: 4 mặt bên
+            const face = Math.floor(rand() * 5);
             const fa = rand() - 0.5;
             const fb = rand() - 0.5;
             let lx, ly, lz, nx, ny, nz, isRib;
@@ -447,23 +449,23 @@
             if (face === 0) {
               lx = fa * g.w; ly = g.h; lz = fb * g.d;
               nx = 0; ny = 1; nz = 0;
-              isRib = Math.abs(lx) < 0.024 || Math.abs(lz) < 0.024;
+              isRib = Math.abs(lx) < 0.025 || Math.abs(lz) < 0.025;
             } else if (face === 1) {
               lx = g.w / 2; ly = (fb + 0.5) * g.h; lz = fa * g.d;
               nx = 1; ny = 0; nz = 0;
-              isRib = Math.abs(lz) < 0.024;
+              isRib = Math.abs(lz) < 0.025;
             } else if (face === 2) {
               lx = -g.w / 2; ly = (fb + 0.5) * g.h; lz = fa * g.d;
               nx = -1; ny = 0; nz = 0;
-              isRib = Math.abs(lz) < 0.024;
+              isRib = Math.abs(lz) < 0.025;
             } else if (face === 3) {
               lx = fa * g.w; ly = (fb + 0.5) * g.h; lz = g.d / 2;
               nx = 0; ny = 0; nz = 1;
-              isRib = Math.abs(lx) < 0.024;
+              isRib = Math.abs(lx) < 0.025;
             } else {
               lx = fa * g.w; ly = (fb + 0.5) * g.h; lz = -g.d / 2;
               nx = 0; ny = 0; nz = -1;
-              isRib = Math.abs(lx) < 0.024;
+              isRib = Math.abs(lx) < 0.025;
             }
 
             const wx = gx + lx * cosR - lz * sinR;
@@ -485,16 +487,15 @@
             );
           }
 
-          // Nơ trên nắp hộp quà
           for (const [bx, by, bz] of bowSphere) {
             addPoint(
-              gx + bx * 0.055,
-              GROUND + g.h + 0.025 + by * 0.03,
-              gz + bz * 0.055,
+              gx + bx * 0.058,
+              GROUND + g.h + 0.025 + by * 0.032,
+              gz + bz * 0.058,
               bx, by, bz,
               g.rib,
               "GIFT",
-              t0 + 0.15,
+              t0 + 0.12,
               1.0,
               0,
               gx, GROUND + g.h, gz,
@@ -507,18 +508,18 @@
       buildScene();
 
       // ==========================================
-      // 4. PHÉP CHIẾU 3D -> 2D & VẼ NGÔI SAO ĐỈNH
+      // 4. PHÉP CHIẾU 3D -> 2D & NGÔI SAO BÙNG TIA SÁNG
       // ==========================================
-      const camZ = 3.35;
-      const sinP = Math.sin(0.14);
-      const cosP = Math.cos(0.14);
-      const fov = 1.65;
+      const camZ = 3.25;
+      const sinP = Math.sin(0.15);
+      const cosP = Math.cos(0.15);
+      const fov = 1.92;
       const aspect = CH / CW;
 
       function project(x, y, z, cosA, sinA) {
         const rx = x * cosA - z * sinA;
         const rz = x * sinA + z * cosA;
-        const cy = y + 0.22;
+        const cy = y + 0.34;
         const cz = rz + camZ;
 
         const py = cy * cosP - cz * sinP;
@@ -530,78 +531,140 @@
         return { sx, sy, pz };
       }
 
-      // Vẽ ngôi sao 3D phát sáng trên đỉnh cây
-      function drawStar(charGrid, colorGrid, zBuf, cx, cy, scale, flash) {
-        const R = scale * 1.72;       // Chiều cao từ tâm ra đỉnh cánh
-        const rIn = R * 0.45;          // Độ sâu hõm trong tạo 5 cánh rõ nét
-        const stretchX = 1.95;         // Bù tỷ lệ chiều ngang ký tự ASCII
-        const sector = TAU / 5;
-        const halfSector = Math.PI / 5;
-        const sinHalf = Math.sin(halfSector);
+      // Kiểm tra điểm (px, py) có nằm trong đa giác ngôi sao 5 cánh hay không
+      function pointInPoly(px, py, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const xi = poly[i][0], yi = poly[i][1];
+          const xj = poly[j][0], yj = poly[j][1];
+          const intersect = ((yi > py) !== (yj > py)) &&
+            (px < ((xj - xi) * (py - yi)) / ((yj - yi) || 1e-6) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      }
 
-        const maxDy = Math.ceil(R + 1);
-        const maxDx = Math.ceil(R * stretchX + 2);
+      // Hàm vẽ ngôi sao giống hệt tác giả: tia sáng 8 hướng + đa giác 5 cánh đặc
+      function drawStar(charGrid, colorGrid, zBuf, cx, cy, size, t, flash = 0) {
+        const stretchX = 1.92;
+        const tintR = 1.0;
+        const tintG = 0.84 + (1.0 - 0.84) * flash;
+        const tintB = 0.25 + (1.0 - 0.25) * flash;
+        const boost = 1 + 1.5 * flash;
 
-        for (let dy = -maxDy; dy <= maxDy; dy++) {
-          for (let dx = -maxDx; dx <= maxDx; dx++) {
-            const nx = dx / stretchX;
-            const ny = dy;
-            const d = Math.hypot(nx, ny);
-
-            // Cộng thêm halfSector để đỉnh nhọn hướng thẳng lên trên (ny < 0)
-            const ang = Math.atan2(ny, nx) + Math.PI / 2 + halfSector;
-            const wrapped = ((ang % sector) + sector) % sector;
-            const phi = Math.abs(wrapped - halfSector);
-
-            // Phương trình biên cạnh thẳng của ngôi sao 5 cánh
-            const rStar = (R * rIn * sinHalf) / (rIn * Math.sin(halfSector - phi) + R * Math.sin(phi));
-
-            // Hiệu ứng tia lóe nhẹ lúc ngôi sao vừa bật sáng
-            const isFlare = flash > 0.08 && (
-              (dy === 0 && Math.abs(dx) <= maxDx + 1) ||
-              (dx === 0 && Math.abs(dy) <= maxDy + 1)
-            );
-
-            if (d <= rStar || isFlare) {
-              const col = Math.round(cx + dx);
-              const row = Math.round(cy + dy);
-              if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
-                const idx = row * COLS + col;
-                zBuf[idx] = 0.1;
-
-                const ratio = d / Math.max(rStar, 0.001);
-                let ch;
-                if (d > rStar) {
-                  ch = "+";
-                } else if (ratio < 0.36) {
-                  ch = "@";
-                } else if (ratio < 0.72) {
-                  ch = "#";
-                } else if (ratio < 0.90) {
-                  ch = "*";
-                } else {
-                  ch = (ny > 0.2 && Math.abs(nx) > 1.2) ? "+" : "*";
-                }
-
-                charGrid[idx] = ch;
-
-                if (ch === "@") {
-                  colorGrid[idx] = "rgb(255, 252, 210)";
-                } else if (ch === "#") {
-                  const g = Math.min(255, Math.round(215 + 35 * flash));
-                  colorGrid[idx] = `rgb(255, ${g}, 85)`;
-                } else {
-                  const g = Math.min(255, Math.round(195 + 45 * flash));
-                  colorGrid[idx] = `rgb(255, ${g}, 60)`;
-                }
+        // 1. Vẽ 8 tia sáng mảnh tỏa ra xung quanh (bùng dài lúc mới bật sáng)
+        const rayLen = Math.round(size * (0.95 + 2.8 * flash));
+        for (let k = 0; k < 8; k++) {
+          const ang = (k * TAU) / 8 + 0.15 * Math.sin(t * 0.7);
+          const dx = Math.cos(ang) * stretchX;
+          const dy = Math.sin(ang);
+          for (let r = 1; r <= rayLen; r++) {
+            const fade = 1 - r / (rayLen + 1);
+            if (fade < 0.15 && flash < 0.1) continue;
+            const col = Math.round(cx + dx * r);
+            const row = Math.round(cy + dy * r);
+            if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+              const idx = row * COLS + col;
+              if (zBuf[idx] > 0.12) {
+                zBuf[idx] = 0.12;
+                charGrid[idx] = fade > 0.55 ? "*" : "+";
+                const lum = clamp(fade * boost, 0.35, 1.35);
+                colorGrid[idx] = `rgb(${Math.min(255, Math.round(tintR * 255 * lum))},${Math.min(255, Math.round(tintG * 255 * lum))},${Math.min(255, Math.round(tintB * 255 * lum))})`;
               }
             }
           }
         }
+
+        // 2. Tạo 10 đỉnh của ngôi sao 5 cánh đều (đỉnh nhọn hướng thẳng lên trên)
+        const R = size * 0.95;
+        const rIn = R * 0.43;
+        const poly = [];
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const rad = i % 2 === 0 ? R : rIn;
+          poly.push([
+            cx + Math.cos(a) * rad * stretchX,
+            cy + Math.sin(a) * rad
+          ]);
+        }
+
+        // 3. Tô kín ngôi sao 5 cánh lên lưới ASCII
+        const maxDy = Math.ceil(R + 1);
+        const maxDx = Math.ceil(R * stretchX + 1);
+        for (let dy = -maxDy; dy <= maxDy; dy++) {
+          for (let dx = -maxDx; dx <= maxDx; dx++) {
+            const px = cx + dx;
+            const py = cy + dy;
+            if (!pointInPoly(px, py, poly)) continue;
+
+            const col = Math.round(px);
+            const row = Math.round(py);
+            if (col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
+
+            const idx = row * COLS + col;
+            zBuf[idx] = 0.08;
+
+            const distNorm = Math.hypot(dx / stretchX, dy) / Math.max(R, 0.01);
+            let ch;
+            if (distNorm < 0.34) {
+              ch = "@";
+            } else if (distNorm < 0.68) {
+              ch = "#";
+            } else {
+              ch = "*";
+            }
+
+            charGrid[idx] = ch;
+            if (ch === "@") {
+              colorGrid[idx] = "rgb(255, 253, 220)";
+            } else {
+              const lum = clamp((1.12 - 0.25 * distNorm) * (1 + 0.45 * flash), 0.7, 1.35);
+              colorGrid[idx] = `rgb(${Math.min(255, Math.round(tintR * 255 * lum))},${Math.min(255, Math.round(tintG * 255 * lum))},${Math.min(255, Math.round(tintB * 255 * lum))})`;
+            }
+          }
+        }
       }
+
       // ==========================================
-      // 5. VÒNG LẶP RENDER CHÍNH & TƯƠNG TÁC
+      // 5. ĐIỀU KHIỂN NHẠC NỀN & TƯƠNG TÁC
       // ==========================================
+      const bgMusic = document.getElementById("bgMusic");
+      const btnMusic = document.getElementById("btnMusic");
+      let musicPlaying = false;
+      bgMusic.volume = 0.65;
+
+      function updateMusicUI() {
+        btnMusic.textContent = musicPlaying ? "M: Music On" : "M: Music Off";
+      }
+
+      function toggleMusic() {
+        if (musicPlaying) {
+          bgMusic.pause();
+          musicPlaying = false;
+          updateMusicUI();
+        } else {
+          bgMusic.play().then(() => {
+            musicPlaying = true;
+            updateMusicUI();
+          }).catch(() => {});
+        }
+      }
+
+      function autoStartMusic() {
+        if (!musicPlaying) {
+          bgMusic.play().then(() => {
+            musicPlaying = true;
+            updateMusicUI();
+          }).catch(() => {});
+        }
+        window.removeEventListener("pointerdown", autoStartMusic);
+        window.removeEventListener("keydown", autoStartMusic);
+      }
+
+      window.addEventListener("pointerdown", autoStartMusic);
+      window.addEventListener("keydown", autoStartMusic);
+      btnMusic.onclick = toggleMusic;
+
       let elapsed = 0;
       let angle = 0;
       let paused = false;
@@ -609,7 +672,6 @@
       let lastMouseX = 0;
       let lastTime = performance.now();
 
-      // Hỗ trợ kéo chuột & vuốt cảm ứng để xoay tự do
       canvas.addEventListener("pointerdown", (e) => {
         dragging = true;
         lastMouseX = e.clientX;
@@ -653,14 +715,17 @@
           restartScene();
         } else if (e.key === "s" || e.key === "S") {
           saveScreenshot();
+        } else if (e.key === "m" || e.key === "M") {
+          toggleMusic();
         }
       });
 
+      // ==========================================
+      // 6. VÒNG LẶP RENDER CHÍNH
+      // ==========================================
       const zBuf = new Float32Array(COLS * ROWS);
       const charGrid = new Array(COLS * ROWS);
       const colorGrid = new Array(COLS * ROWS);
-
-      // Hướng ánh sáng chính
       const [LX, LY, LZ] = normalize(0.55, 0.72, -0.45);
 
       function render(now) {
@@ -670,12 +735,10 @@
         if (!paused) {
           elapsed += dt;
           if (!dragging) {
-            // Tốc độ xoay tròn ~22 độ/giây
             angle = (angle + dt * 0.38) % TAU;
           }
         }
 
-        // Xóa buffer
         zBuf.fill(999);
         charGrid.fill("");
         colorGrid.fill("");
@@ -683,18 +746,18 @@
         const cosA = Math.cos(angle);
         const sinA = Math.sin(angle);
 
-        // 1. Vẽ bầu trời sao nhấp nháy
+        // 1. Bầu trời sao nhấp nháy
         for (const st of stars) {
           const twinkle = 0.5 + 0.5 * Math.sin(elapsed * st.speed + st.phase);
           if (twinkle > 0.25) {
             const idx = st.row * COLS + st.col;
             charGrid[idx] = twinkle > 0.82 ? st.ch : ".";
-            const b = Math.round(90 + 130 * twinkle);
+            const b = Math.round(95 + 135 * twinkle);
             colorGrid[idx] = `rgb(${b},${b + 10},${Math.min(255, b + 35)})`;
           }
         }
 
-        // 2. Vẽ mặt sàn lưới chấm xoay tròn
+        // 2. Mặt sàn chấm tròn xoay quanh gốc cây
         for (const gp of groundPts) {
           const p = project(gp.x, gp.y, gp.z, cosA, sinA);
           if (!p) continue;
@@ -705,31 +768,28 @@
             if (p.pz < zBuf[idx]) {
               zBuf[idx] = p.pz;
               charGrid[idx] = ".";
-              const shade = Math.round(clamp(135 - p.pz * 22, 35, 95));
+              const radialFade = clamp(1.15 - gp.dist / 2.5, 0.25, 1.0);
+              const shade = Math.round(clamp((145 - p.pz * 20) * radialFade, 38, 115));
               colorGrid[idx] = `rgb(${shade},${shade + 8},${shade + 22})`;
             }
           }
         }
 
-        // 3. Chiếu toàn bộ điểm 3D của cây thông & phụ kiện
-        let activeLights = 0;
         const lightRatio = clamp((elapsed - T_LIGHTS[0]) / (T_LIGHTS[1] - T_LIGHTS[0]), 0, 1);
-        activeLights = Math.round(totalLights * lightRatio);
+        const activeLights = Math.round(totalLights * lightRatio);
 
+        // 3. Chiếu toàn bộ điểm 3D + Hiệu ứng lóe trắng lúc mới xuất hiện
         for (let i = 0; i < points.length; i++) {
           const pt = points[i];
-          if (elapsed < pt.t0) continue;
+          const age = elapsed - pt.t0;
+          if (age < 0) continue;
 
-          // Hiệu ứng bung nở (pop-in) cho quả châu, đèn, hộp quà
           let px = pt.x, py = pt.y, pz = pt.z;
-          if (pt.pop) {
-            const age = (elapsed - pt.t0) / 0.35;
-            if (age < 1) {
-              const s = smoothstep(age);
-              px = pt.cx + (pt.x - pt.cx) * s;
-              py = pt.cy + (pt.y - pt.cy) * s;
-              pz = pt.cz + (pt.z - pt.cz) * s;
-            }
+          if (pt.pop && age < 0.35) {
+            const s = smoothstep(age / 0.35);
+            px = pt.cx + (pt.x - pt.cx) * s;
+            py = pt.cy + (pt.y - pt.cy) * s;
+            pz = pt.cz + (pt.z - pt.cz) * s;
           }
 
           const proj = project(px, py, pz, cosA, sinA);
@@ -744,7 +804,6 @@
 
           zBuf[idx] = proj.pz;
 
-          // Xoay vector pháp tuyến để tính đổ bóng 3D
           const rnx = pt.nx * cosA - pt.nz * sinA;
           const rnz = pt.nx * sinA + pt.nz * cosA;
           const diff = Math.max(0, rnx * LX + pt.ny * LY + rnz * LZ);
@@ -752,46 +811,60 @@
           let lum = pt.base * (0.28 + 0.82 * diff);
           let ch = RAMP[Math.min(RAMP.length - 1, Math.floor(clamp(lum, 0, 0.999) * RAMP.length))];
 
-          // Xử lý phát sáng riêng cho đèn nháy và dây kim tuyến
+          // Tính độ lóe trắng khi điểm vừa sinh ra (tạo vệt sóng trắng mọc cây & hộp quà lóe trắng)
+          let spawnFlash = 0;
+          if (pt.kind === "NEEDLE" || pt.kind === "SNOW" || pt.kind === "CORE" || pt.kind === "TRUNK") {
+            if (age < 0.30) spawnFlash = 1 - age / 0.30;
+          } else if (pt.kind === "GIFT") {
+            if (age < 0.42) spawnFlash = Math.pow(1 - age / 0.42, 1.4);
+          } else if (pt.kind === "BALL" || pt.kind === "TINSEL") {
+            if (age < 0.25) spawnFlash = 1 - age / 0.25;
+          }
+
           if (pt.kind === "LIGHT") {
             const pulse = 0.65 + 0.35 * Math.sin(elapsed * 5.0 + pt.phase);
-            lum = 0.75 + 0.35 * pulse;
+            lum = 0.78 + 0.35 * pulse;
             ch = pulse > 0.75 ? "@" : "o";
           } else if (pt.kind === "TINSEL") {
             const shimmer = 0.8 + 0.25 * Math.sin(elapsed * 4.0 + pt.phase);
             lum = clamp(lum * shimmer + 0.25, 0, 1);
-            ch = lum > 0.65 ? "#" : "*";
+            ch = spawnFlash > 0.3 ? "@" : lum > 0.65 ? "#" : "*";
           } else if (pt.kind === "CORE") {
-            ch = ".";
+            ch = spawnFlash > 0.35 ? "=" : ".";
+          } else if (spawnFlash > 0.45) {
+            ch = spawnFlash > 0.75 ? "#" : "+";
           }
 
-          const intensity = 0.35 + 0.78 * clamp(lum, 0, 1.15);
-          const r = Math.min(255, Math.round(pt.r * 255 * intensity));
-          const g = Math.min(255, Math.round(pt.g * 255 * intensity));
-          const b = Math.min(255, Math.round(pt.b * 255 * intensity));
+          const intensity = 0.35 + 0.78 * clamp(lum, 0, 1.15) + 0.65 * spawnFlash;
+          const baseR = pt.r + (1.0 - pt.r) * spawnFlash;
+          const baseG = pt.g + (1.0 - pt.g) * spawnFlash;
+          const baseB = pt.b + (1.0 - pt.b) * spawnFlash;
+
+          const r = Math.min(255, Math.round(baseR * 255 * intensity));
+          const g = Math.min(255, Math.round(baseG * 255 * intensity));
+          const b = Math.min(255, Math.round(baseB * 255 * intensity));
 
           charGrid[idx] = ch;
           colorGrid[idx] = `rgb(${r},${g},${b})`;
         }
 
-        // 4. Vẽ ngôi sao trên đỉnh cây
+        // 4. Vẽ ngôi sao 5 cánh trên đỉnh cây (bùng tia trắng -> lắng về vàng)
         if (elapsed >= T_STAR) {
           const on = smoothstep((elapsed - T_STAR) / 0.35);
           const flash = Math.pow(clamp(1 - (elapsed - T_STAR) / 1.0, 0, 1), 2);
-          const starProj = project(0, Y1 + 0.11, 0, cosA, sinA);
+          const starProj = project(0, Y1 + 0.14, 0, cosA, sinA);
           if (starProj) {
-            const starScale = (1.1 + 0.8 * on) * (1 + 0.06 * Math.sin(elapsed * 6));
-            drawStar(charGrid, colorGrid, zBuf, starProj.sx, starProj.sy, starScale, flash);
+            const starSize = (2.1 + 1.6 * on) * (1 + 0.05 * Math.sin(elapsed * 5));
+            drawStar(charGrid, colorGrid, zBuf, starProj.sx, starProj.sy, starSize, elapsed, flash);
           }
         }
 
         // 5. Vẽ dòng chữ MERRY CHRISTMAS 2026 ở phía dưới
         if (elapsed > T_MSG) {
-          const msgRow = ROWS - 9;
+          const msgRow = ROWS - 6;
           const x0 = Math.floor((COLS - MESSAGE.length) / 2);
-          const shown = Math.min(MESSAGE.length, Math.floor((elapsed - T_MSG) * 14));
+          const shown = Math.min(MESSAGE.length, Math.floor((elapsed - T_MSG) * 10));
 
-          // Xóa một dải ngang để chữ nổi bật rõ ràng
           for (let r = msgRow - 1; r <= msgRow + 1; r++) {
             for (let c = Math.max(0, x0 - 2); c < Math.min(COLS, x0 + shown + 2); c++) {
               charGrid[r * COLS + c] = "";
@@ -806,16 +879,16 @@
           for (let i = 0; i < shown; i++) {
             const ch = MESSAGE[i];
             if (ch !== " ") {
-              const tint = palette[(Math.floor(i / 2) + Math.floor(elapsed * 1.8)) % 3];
-              const glow = 0.82 + 0.18 * Math.sin(elapsed * 5 + i * 0.4);
+              const tint = palette[(Math.floor(i / 2) + Math.floor(elapsed * 1.5)) % 3];
+              const glow = 0.85 + 0.25 * Math.sin(elapsed * 5 + i * 0.4);
               const idx = msgRow * COLS + (x0 + i);
               charGrid[idx] = ch;
-              colorGrid[idx] = `rgb(${Math.round(tint[0] * glow)},${Math.round(tint[1] * glow)},${Math.round(tint[2] * glow)})`;
+              colorGrid[idx] = `rgb(${Math.min(255, Math.round(tint[0] * glow))},${Math.min(255, Math.round(tint[1] * glow))},${Math.min(255, Math.round(tint[2] * glow))})`;
             }
           }
         }
 
-        // 6. Vẽ toàn bộ lưới ký tự lên Canvas
+        // 6. Render lưới ký tự lên Canvas
         ctx.fillStyle = "#080a10";
         ctx.fillRect(0, 0, COLS * CW, ROWS * CH);
 
@@ -841,7 +914,7 @@
           }
         }
 
-        // 7. Vẽ thông số HUD (góc trên phải & góc dưới trái)
+        // 7. Thông số HUD
         ctx.font = `12px Consolas, Menlo, "Courier New", monospace`;
         ctx.fillStyle = "#ffc45a";
         const timeText = `• t ${elapsed.toFixed(2).padStart(5, "0")}s`;
@@ -849,17 +922,17 @@
 
         const deg = (((angle * 180) / Math.PI) % 360 + 360) % 360;
         ctx.fillStyle = "#b0a8c4";
-        ctx.fillText(WATERMARK, 2 * CW, (ROWS - 5.2) * CH);
+        ctx.fillText(WATERMARK, 2 * CW, (ROWS - 4.2) * CH);
         ctx.fillStyle = "#7a859e";
         ctx.fillText(
           `rotation ${deg.toFixed(2).padStart(6, "0")}°    lights  ${activeLights}`,
           2 * CW,
-          (ROWS - 3.8) * CH
+          (ROWS - 2.9) * CH
         );
         ctx.fillText(
           `letters ${letterCount.toLocaleString("en-US")}`,
           2 * CW,
-          (ROWS - 2.4) * CH
+          (ROWS - 1.6) * CH
         );
 
         requestAnimationFrame(render);
