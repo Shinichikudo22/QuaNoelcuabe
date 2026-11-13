@@ -161,9 +161,9 @@
       // ==========================================
       // 3. XÂY DỰNG MÔ HÌNH 3D CÂY THÔNG & PHỤ KIỆN
       // ==========================================
-      const GROUND = -1.0;
-      const Y0 = -0.68;
-      const Y1 = 1.05;
+      const GROUND = -0.72;
+      const Y0 = -0.40;
+      const Y1 = 1.32;
 
       // Mốc thời gian xuất hiện từng phần (giây)
       const T_GROW = [1.0, 4.6];     // Cây mọc từ ngọn xuống gốc
@@ -509,16 +509,16 @@
       // ==========================================
       // 4. PHÉP CHIẾU 3D -> 2D & VẼ NGÔI SAO ĐỈNH
       // ==========================================
-      const camZ = 3.05;
-      const sinP = Math.sin(0.14);
-      const cosP = Math.cos(0.14);
-      const fov = 1.65;
+      const camZ = 2.95;
+      const sinP = Math.sin(0.11);
+      const cosP = Math.cos(0.11);
+      const fov = 1.72;
       const aspect = CH / CW;
 
       function project(x, y, z, cosA, sinA) {
         const rx = x * cosA - z * sinA;
         const rz = x * sinA + z * cosA;
-        const cy = y - 0.06;
+        const cy = y + 0.14;
         const cz = rz + camZ;
 
         const py = cy * cosP - cz * sinP;
