@@ -532,9 +532,9 @@
 
       // Vẽ ngôi sao 3D phát sáng trên đỉnh cây
       function drawStar(charGrid, colorGrid, zBuf, cx, cy, scale, flash) {
-        const R = scale * 1.75;       // Chiều cao từ tâm ra đỉnh cánh
-        const rIn = R * 0.40;          // Độ sâu hõm trong tạo 5 cánh nhọn rõ rệt
-        const stretchX = 1.95;         // Bù tỷ lệ chiều rộng ký tự ASCII
+        const R = scale * 1.72;       // Chiều cao từ tâm ra đỉnh cánh
+        const rIn = R * 0.45;          // Độ sâu hõm trong tạo 5 cánh rõ nét
+        const stretchX = 1.95;         // Bù tỷ lệ chiều ngang ký tự ASCII
         const sector = TAU / 5;
         const halfSector = Math.PI / 5;
         const sinHalf = Math.sin(halfSector);
@@ -548,8 +548,8 @@
             const ny = dy;
             const d = Math.hypot(nx, ny);
 
-            // Góc tính từ đỉnh trên cùng (-PI/2) hướng thẳng lên trên
-            const ang = Math.atan2(ny, nx) + Math.PI / 2;
+            // Cộng thêm halfSector để đỉnh nhọn hướng thẳng lên trên (ny < 0)
+            const ang = Math.atan2(ny, nx) + Math.PI / 2 + halfSector;
             const wrapped = ((ang % sector) + sector) % sector;
             const phi = Math.abs(wrapped - halfSector);
 
@@ -599,7 +599,6 @@
           }
         }
       }
-
       // ==========================================
       // 5. VÒNG LẶP RENDER CHÍNH & TƯƠNG TÁC
       // ==========================================
