@@ -509,16 +509,16 @@
       // ==========================================
       // 4. PHÉP CHIẾU 3D -> 2D & VẼ NGÔI SAO ĐỈNH
       // ==========================================
-      const camZ = 2.95;
-      const sinP = Math.sin(0.11);
-      const cosP = Math.cos(0.11);
-      const fov = 1.72;
+      const camZ = 3.35;
+      const sinP = Math.sin(0.14);
+      const cosP = Math.cos(0.14);
+      const fov = 1.65;
       const aspect = CH / CW;
 
       function project(x, y, z, cosA, sinA) {
         const rx = x * cosA - z * sinA;
         const rz = x * sinA + z * cosA;
-        const cy = y + 0.14;
+        const cy = y + 0.22;
         const cz = rz + camZ;
 
         const py = cy * cosP - cz * sinP;
