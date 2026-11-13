@@ -532,29 +532,68 @@
 
       // Vẽ ngôi sao 3D phát sáng trên đỉnh cây
       function drawStar(charGrid, colorGrid, zBuf, cx, cy, scale, flash) {
-        const radius = Math.ceil(scale * 3.2);
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dx = -radius * 2; dx <= radius * 2; dx++) {
-            const nx = dx / (scale * 1.6);
-            const ny = dy / scale;
-            const d = Math.hypot(nx, ny);
-            const ang = Math.atan2(ny, nx);
-            // Hình dáng ngôi sao 5 cánh + tia sáng
-            const starShape = 0.55 + 0.45 * Math.cos(5 * ang - Math.PI / 2);
-            const cross = Math.exp(-Math.abs(nx) * 2.5) * Math.exp(-Math.abs(ny) * 0.7) +
-                          Math.exp(-Math.abs(ny) * 2.5) * Math.exp(-Math.abs(nx) * 0.7);
+        const R = scale * 1.75;       // Chiều cao từ tâm ra đỉnh cánh
+        const rIn = R * 0.40;          // Độ sâu hõm trong tạo 5 cánh nhọn rõ rệt
+        const stretchX = 1.95;         // Bù tỷ lệ chiều rộng ký tự ASCII
+        const sector = TAU / 5;
+        const halfSector = Math.PI / 5;
+        const sinHalf = Math.sin(halfSector);
 
-            if (d < starShape * 1.15 || (flash > 0.05 && cross > 0.35 && d < 2.6)) {
+        const maxDy = Math.ceil(R + 1);
+        const maxDx = Math.ceil(R * stretchX + 2);
+
+        for (let dy = -maxDy; dy <= maxDy; dy++) {
+          for (let dx = -maxDx; dx <= maxDx; dx++) {
+            const nx = dx / stretchX;
+            const ny = dy;
+            const d = Math.hypot(nx, ny);
+
+            // Góc tính từ đỉnh trên cùng (-PI/2) hướng thẳng lên trên
+            const ang = Math.atan2(ny, nx) + Math.PI / 2;
+            const wrapped = ((ang % sector) + sector) % sector;
+            const phi = Math.abs(wrapped - halfSector);
+
+            // Phương trình biên cạnh thẳng của ngôi sao 5 cánh
+            const rStar = (R * rIn * sinHalf) / (rIn * Math.sin(halfSector - phi) + R * Math.sin(phi));
+
+            // Hiệu ứng tia lóe nhẹ lúc ngôi sao vừa bật sáng
+            const isFlare = flash > 0.08 && (
+              (dy === 0 && Math.abs(dx) <= maxDx + 1) ||
+              (dx === 0 && Math.abs(dy) <= maxDy + 1)
+            );
+
+            if (d <= rStar || isFlare) {
               const col = Math.round(cx + dx);
               const row = Math.round(cy + dy);
               if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
                 const idx = row * COLS + col;
                 zBuf[idx] = 0.1;
-                charGrid[idx] = d < 0.45 ? "@" : d < 0.85 ? "#" : "+";
-                const boost = Math.min(255, Math.round(235 + 40 * flash));
-                const gBoost = Math.min(255, Math.round(205 + 50 * flash));
-                const bBoost = Math.min(255, Math.round(80 + 175 * flash));
-                colorGrid[idx] = `rgb(${boost},${gBoost},${bBoost})`;
+
+                const ratio = d / Math.max(rStar, 0.001);
+                let ch;
+                if (d > rStar) {
+                  ch = "+";
+                } else if (ratio < 0.36) {
+                  ch = "@";
+                } else if (ratio < 0.72) {
+                  ch = "#";
+                } else if (ratio < 0.90) {
+                  ch = "*";
+                } else {
+                  ch = (ny > 0.2 && Math.abs(nx) > 1.2) ? "+" : "*";
+                }
+
+                charGrid[idx] = ch;
+
+                if (ch === "@") {
+                  colorGrid[idx] = "rgb(255, 252, 210)";
+                } else if (ch === "#") {
+                  const g = Math.min(255, Math.round(215 + 35 * flash));
+                  colorGrid[idx] = `rgb(255, ${g}, 85)`;
+                } else {
+                  const g = Math.min(255, Math.round(195 + 45 * flash));
+                  colorGrid[idx] = `rgb(255, ${g}, 60)`;
+                }
               }
             }
           }
